@@ -1,0 +1,151 @@
+---
+title: "Some FPL Data Findings"
+output: html_document
+date: "2022-10-28"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(plotly)
+
+folder_input <- "~/Desktop/Personal/FPLData - Test Upload to Github/1_input"
+fpl2223_raw <- "fpldata_20222023_sofar.csv"
+
+fpl2223 <- read.csv(file.path(folder_input,fpl2223_raw))
+
+
+
+
+```
+
+```{r, clean data, include = FALSE}
+
+#check if seasons have duplicate names - no player should have more than 38 rows of data (only 38 games per season)
+#Its a season in progress so lets check how many game weeks it has first
+unique(fpl2223$GW)
+#11 gameweeks
+#So no players should be in the dataset more than 11 times
+fpl2223%>%
+  group_by(name)%>%
+  summarize(count = n())%>%
+  filter(count > 11)
+#Ben Davies 
+fpl2122%>%
+  group_by(name, team)%>%
+  summarize(Points = sum(total_points))%>%
+  filter(name  %in% c("Ben Davies"))
+fpl2122%>%
+  group_by(name, team)%>%
+  filter(name  %in% c("Ben Davies"))
+#Weird its not showing the liverpool rows, but if i go to the dataset and search I can see there are also rows with Liverpool
+#So we will jsut remove these
+
+fpl2223 <- 
+  fpl2223[!(fpl2223$name == "Ben Davies" & fpl2223$team == "Liverpool"),]
+#Now double check
+fpl2223%>%
+  group_by(name)%>%
+  summarize(count = n())%>%
+  filter(count > 11)
+#Good
+
+
+#Before i do this I should add the season into each dataset so we know which season those rows are for
+fpl2223 <- 
+  fpl2223%>%
+  mutate(Season = "22/23")
+
+#Convert price to match FPL price format
+fpl2223$value <- fpl2223$value / 10 #convert value into price
+  
+
+```
+
+## Points vs Influence
+
+```{r, points vs influence by team, echo=FALSE, results='asis'}
+
+influence <- 
+  fpldata%>%
+  filter(minutes > 0)%>%
+  ggplot(aes(label1 = name, label2 = opponent_team))+
+  geom_point(aes(x = influence, y = total_points, color = team))+
+  labs(x = "Influence Score", y = "FPL Points")
+
+ggplotly(influence, tooltip = c("name", "team", "opponent_team", "total_points", "influence"))
+
+#Influence shows a much bigger correlation to points than creativity
+
+
+```
+
+## Most Influential Player per Team - 2022/2023 Season {.tabset}
+
+```{r influential player 2022/2023, echo=FALSE, results='asis'}
+
+#This would identify the top most influential player per gameweek for each team
+#top_influence <- 
+#  fpldata%>%
+#  group_by(Season, GW, team)%>%
+#  summarize(Influence = influence, Points = total_points, Name = name)%>%
+#  slice(which.max(Influence))
+
+#Lets try making a tab for each team and then showing a table of Influence and Total points per player
+
+
+for(t in unique(fpl2223$team)) {
+  cat("###", t,'\n') #open each tab and label it
+  plots <- 
+    fpl2223%>%
+    filter(team == t)%>%
+    group_by(name)%>%
+    summarize(TotalPoints = sum(total_points), TotalInfluence = sum(influence))%>%
+    arrange(desc(TotalPoints))
+  print(knitr::kable(plots))
+  cat('\n\n') #closse each tab
+    
+}
+
+
+```
+
+## Points per Minute
+We look at any player with more than 30 points and has played more than 600 minutes
+```{r Points per Minute, echo=FALSE, results='asis', message=FALSE}
+
+
+#it looks like a good amount of minutes so far is 850+ (11 gameweeks)
+#so then lets filter this to minutes above 600
+plots <- 
+  fpl2223%>%
+  group_by(name, position)%>%
+  summarize(TotalPoints = sum(total_points), Minutes = sum(minutes), PointsPerMinute = sum(total_points)/sum(minutes), Price = mean(value)/10)%>%
+  filter(TotalPoints > 30)%>%
+  filter(Minutes > 600)%>%
+  arrange(desc(PointsPerMinute))
+print(knitr::kable(plots))
+
+
+```
+
+
+## Points per Price
+We look at any player with more than 30 points and has played more than 600 minutes
+```{r Points per Influence, echo=FALSE, results='asis', message=FALSE}
+
+
+#it looks like a good amount of minutes so far is 850+ (11 gameweeks)
+#so then lets filter this to minutes above 600
+plots <- 
+  fpl2223%>%
+  group_by(name, position)%>%
+  summarize(TotalPoints = sum(total_points), Minutes = sum(minutes), Price = mean(value)/10, PointsPerPrice = TotalPoints/Price)%>%
+  filter(TotalPoints > 25)%>%
+  filter(Minutes > 600)%>%
+  arrange(desc(PointsPerPrice))
+print(knitr::kable(plots))
+
+
+```
