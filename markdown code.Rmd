@@ -2,7 +2,7 @@
 title: "Some FPL Data Findings"
 output:
   html_document:
-    df_print: paged
+    keep_md: true #creates viewable markdown file in Github
 date: "2022-10-28"
 ---
 
