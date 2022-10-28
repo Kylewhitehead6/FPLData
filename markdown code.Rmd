@@ -32,15 +32,6 @@ fpl2223%>%
   summarize(count = n())%>%
   filter(count > 11)
 #Ben Davies 
-fpl2122%>%
-  group_by(name, team)%>%
-  summarize(Points = sum(total_points))%>%
-  filter(name  %in% c("Ben Davies"))
-fpl2122%>%
-  group_by(name, team)%>%
-  filter(name  %in% c("Ben Davies"))
-#Weird its not showing the liverpool rows, but if i go to the dataset and search I can see there are also rows with Liverpool
-#So we will jsut remove these
 
 fpl2223 <- 
   fpl2223[!(fpl2223$name == "Ben Davies" & fpl2223$team == "Liverpool"),]
@@ -68,7 +59,7 @@ fpl2223$value <- fpl2223$value / 10 #convert value into price
 ```{r, points vs influence by team, echo=FALSE, results='asis'}
 
 influence <- 
-  fpldata%>%
+  fpl2223%>%
   filter(minutes > 0)%>%
   ggplot(aes(label1 = name, label2 = opponent_team))+
   geom_point(aes(x = influence, y = total_points, color = team))+
@@ -84,15 +75,6 @@ ggplotly(influence, tooltip = c("name", "team", "opponent_team", "total_points",
 ## Most Influential Player per Team - 2022/2023 Season {.tabset}
 
 ```{r influential player 2022/2023, echo=FALSE, results='asis'}
-
-#This would identify the top most influential player per gameweek for each team
-#top_influence <- 
-#  fpldata%>%
-#  group_by(Season, GW, team)%>%
-#  summarize(Influence = influence, Points = total_points, Name = name)%>%
-#  slice(which.max(Influence))
-
-#Lets try making a tab for each team and then showing a table of Influence and Total points per player
 
 
 for(t in unique(fpl2223$team)) {
