@@ -1,6 +1,8 @@
 ---
 title: "Some FPL Data Findings"
-output: html_document
+output:
+  html_document:
+    df_print: paged
 date: "2022-10-28"
 ---
 
